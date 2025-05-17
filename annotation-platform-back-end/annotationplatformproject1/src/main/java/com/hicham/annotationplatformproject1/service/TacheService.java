@@ -56,19 +56,12 @@ public class TacheService {
 
     /**
      * Retrieves tasks for an annotator and dataset, with pagination.
-     *
-     * @param annotatorId Annotator ID.
-     * @param datasetId   Dataset ID.
-     * @param page        Optional page number (defaults to last viewed page).
-     * @return ApiResponse with TaskGroupDTO.
      */
     public ApiResponse<TaskGroupDTO> getTasksByAnnotator(Long annotatorId, Long datasetId, Integer page) {
         try {
-            // Validate annotator and dataset
             validationService.validateAnnotator(annotatorId);
             Dataset dataset = validationService.validateDataset(datasetId);
 
-            // Determine page to fetch
             int pageToFetch = page != null ? page : getLastPage(annotatorId, datasetId);
             Pageable pageable = PageRequest.of(pageToFetch, 1);
             Page<Tache> taskPage = tacheRepository.findByAnnotateurIdAndDatasetId(annotatorId, datasetId, pageable);
@@ -118,10 +111,6 @@ public class TacheService {
 
     /**
      * Builds task details for a single task.
-     *
-     * @param task        The task to process.
-     * @param annotatorId The annotator ID.
-     * @return List of TaskDetailDTO objects.
      */
     private List<TaskGroupDTO.TaskDetailDTO> buildTaskDetails(Tache task, Long annotatorId) {
         CoupeTexte coupeTexte = task.getCoupeTexte();
@@ -141,14 +130,11 @@ public class TacheService {
 
     /**
      * Saves an annotation for a task.
-     *
-     * @param annotatorId    Annotator ID.
-     * @param coupeTexteId   Text pair ID.
-     * @param classeChoisieId Chosen class ID.
-     * @return ApiResponse with success or error message.
      */
     public ApiResponse<String> saveAnnotation(Long annotatorId, Long coupeTexteId, Long classeChoisieId) {
         try {
+            // Placeholder for durationInSeconds (to be provided by you)
+            Long durationInSeconds = null; // Replace with your duration logic
             AnnotationRequest request = new AnnotationRequest(annotatorId, coupeTexteId, classeChoisieId);
             ApiResponse<String> response = annotationService.saveAnnotation(request);
 
@@ -169,10 +155,6 @@ public class TacheService {
 
     /**
      * Retrieves the last viewed page for an annotator and dataset.
-     *
-     * @param userId    Annotator ID.
-     * @param datasetId Dataset ID.
-     * @return Last page number (0 if not found).
      */
     private int getLastPage(Long userId, Long datasetId) {
         return userDatasetProgressRepository.findByUserIdAndDatasetId(userId, datasetId)
@@ -182,10 +164,6 @@ public class TacheService {
 
     /**
      * Updates the last viewed page for an annotator and dataset.
-     *
-     * @param userId    Annotator ID.
-     * @param datasetId Dataset ID.
-     * @param page      Page number to set.
      */
     private void updateLastPage(Long userId, Long datasetId, int page) {
         UserDatasetProgress progress = userDatasetProgressRepository.findByUserIdAndDatasetId(userId, datasetId)
@@ -201,9 +179,6 @@ public class TacheService {
 
     /**
      * Retrieves task summaries for an annotator across all datasets.
-     *
-     * @param annotatorId Annotator ID.
-     * @return ApiResponse with list of DatasetTaskSummaryDTO.
      */
     public ApiResponse<List<DatasetTaskSummaryDTO>> getTaskSummaryByAnnotator(Long annotatorId) {
         try {
@@ -243,11 +218,6 @@ public class TacheService {
 
     /**
      * Builds a dataset summary for a set of tasks.
-     *
-     * @param datasetId   Dataset ID.
-     * @param tasks       List of tasks for the dataset.
-     * @param annotatorId Annotator ID.
-     * @return DatasetTaskSummaryDTO.
      */
     private DatasetTaskSummaryDTO buildDatasetSummary(Long datasetId, List<Tache> tasks, Long annotatorId) {
         Dataset dataset = validationService.validateDataset(datasetId);

@@ -25,7 +25,4 @@ public class Annotation {
     private ClassePersistante classeChoisie;
 
     private LocalDateTime annotateAt;
-
-    @Column(name = "duration_in_seconds")
-    private Long durationInSeconds; // Time taken to annotate in seconds
 }

@@ -14,12 +14,8 @@ public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
 
     long countByAnnotateAtAfter(LocalDateTime dateTime);
 
-
-
-    // Count annotations within a time range
     @Query("SELECT COUNT(a) FROM Annotation a WHERE a.annotateAt BETWEEN :start AND :end")
     long countByAnnotateAtBetween(LocalDateTime start, LocalDateTime end);
-
 
     @Query("SELECT FUNCTION('DATE', a.annotateAt) as date, COUNT(a) as count " +
             "FROM Annotation a " +
@@ -39,4 +35,7 @@ public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
     Annotation findByCoupeTexteIdAndAnnotateurId(Long id, Long annotatorId);
 
     Optional<ClassePersistante> findClassePersistanteById(Long classeChoisieId);
+
+    @Query("SELECT a FROM Annotation a WHERE a.coupeTexte.dataset.id = :datasetId")
+    List<Annotation> findByCoupeTexteDatasetId(Long datasetId);
 }

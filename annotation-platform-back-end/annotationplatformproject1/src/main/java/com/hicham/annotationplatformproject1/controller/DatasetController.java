@@ -1,8 +1,10 @@
 package com.hicham.annotationplatformproject1.controller;
 
 import com.hicham.annotationplatformproject1.dto.*;
-import com.hicham.annotationplatformproject1.model.Utilisateur;
+import com.hicham.annotationplatformproject1.model.Annotation;
+import com.hicham.annotationplatformproject1.repository.AnnotationRepository;
 import com.hicham.annotationplatformproject1.security.UtilisateurService;
+import com.hicham.annotationplatformproject1.service.ActivityLogService;
 import com.hicham.annotationplatformproject1.service.DatasetService;
 import com.hicham.annotationplatformproject1.service.TaskAssignmentService;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/datasets")
@@ -20,12 +23,19 @@ public class DatasetController {
     private final DatasetService datasetService;
     private final TaskAssignmentService taskAssignmentService;
     private final UtilisateurService utilisateurService;
+    private final AnnotationRepository annotationRepository;
+    private final ActivityLogService activityLogService;
 
     public DatasetController(DatasetService datasetService,
-                             TaskAssignmentService taskAssignmentService, UtilisateurService utilisateurService) {
+                             TaskAssignmentService taskAssignmentService,
+                             UtilisateurService utilisateurService,
+                             AnnotationRepository annotationRepository,
+                             ActivityLogService activityLogService) {
         this.datasetService = datasetService;
         this.taskAssignmentService = taskAssignmentService;
         this.utilisateurService = utilisateurService;
+        this.annotationRepository = annotationRepository;
+        this.activityLogService = activityLogService;
     }
 
     @PostMapping
@@ -83,7 +93,6 @@ public class DatasetController {
     public ResponseEntity<ApiResponse<String>> assignTextPairs(
             @PathVariable Long datasetId,
             @RequestBody AssignmentRequest request) {
-        // Ensure the datasetId in the path matches the request body
         if (!datasetId.equals(request.getDatasetId())) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Dataset ID in path does not match request body"));
@@ -104,5 +113,39 @@ public class DatasetController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=dataset_" + id + ".csv")
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(response.getData());
+    }
+
+    @GetMapping("/{datasetId}/annotation-durations")
+    public ResponseEntity<ApiResponse<List<AnnotationDetailsDTO>>> getAnnotationDurations(@PathVariable Long datasetId) {
+        try {
+            if (!datasetService.getDatasetById(datasetId).isSuccess()) {
+                return ResponseEntity.status(404)
+                        .body(ApiResponse.error("Dataset not found"));
+            }
+
+            List<Annotation> annotations = annotationRepository.findByCoupeTexteDatasetId(datasetId);
+            List<AnnotationDetailsDTO> annotationDetails = annotations.stream()
+                    .map(a -> new AnnotationDetailsDTO(
+                            a.getId(),
+                            a.getAnnotateur().getId(),
+                            a.getAnnotateur().getUsername(),
+                            a.getClasseChoisie().getId(),
+                            a.getClasseChoisie().getNomClasse(),
+                            a.getAnnotateAt()))
+                    .collect(Collectors.toList());
+
+            activityLogService.logActivity(
+                    "ANNOTATION_DURATIONS_RETRIEVED",
+                    "Retrieved " + annotationDetails.size() + " annotation durations for dataset ID: " + datasetId
+            );
+            return ResponseEntity.ok(ApiResponse.success("Annotation durations retrieved successfully", annotationDetails));
+        } catch (Exception e) {
+            activityLogService.logActivity(
+                    "ANNOTATION_DURATIONS_ERROR",
+                    "Failed to retrieve annotation durations for dataset ID: " + datasetId + ": " + e.getMessage()
+            );
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Failed to retrieve annotation durations: " + e.getMessage()));
+        }
     }
 }

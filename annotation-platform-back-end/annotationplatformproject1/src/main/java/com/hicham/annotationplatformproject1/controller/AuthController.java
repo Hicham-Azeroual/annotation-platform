@@ -7,6 +7,7 @@ import com.hicham.annotationplatformproject1.repository.UtilisateurRepository;
 import com.hicham.annotationplatformproject1.security.CustomUserDetailsService;
 import com.hicham.annotationplatformproject1.security.JwtUtil;
 import com.hicham.annotationplatformproject1.security.TokenBlacklist;
+import com.hicham.annotationplatformproject1.security.UtilisateurService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,9 @@ public class AuthController {
 
     @Autowired
     private TokenBlacklist tokenBlacklist;
+
+    @Autowired
+    private UtilisateurService utilisateurService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<?>> login(@RequestBody AuthRequest request) {
@@ -91,14 +95,34 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            utilisateurService.regeneratePassword(request.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Password reset successful. Check your email for the new password.", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("User with email " + request.getEmail() + " not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to reset password: " + e.getMessage()));
+        }
+    }
+
     public static class AuthRequest {
         private String username;
         private String password;
 
-        // Getters and setters
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+    }
+
+    public static class ForgotPasswordRequest {
+        private String email;
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
     }
 }
